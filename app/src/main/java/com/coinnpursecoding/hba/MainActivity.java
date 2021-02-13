@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
     // Bullies or loves the user
     public static String generateName(String mode){
         Random rand = new Random();
-        int randomNum = 0;
+        int randomNum;
         String name = "";
 
         // Switch case dependent on SharedPreferences
@@ -102,15 +102,9 @@ public class MainActivity extends AppCompatActivity {
         return name;
     }
 
-    // Clears bundle when date is changed
-    private static void clearBundle(Bundle bundle){
-        if(bundle!=null)
-         bundle.clear();
-    }
-
     // Adds dateLong to SQLite Database
-    public boolean AddData(String name, long dateLong, String date){
-        return myDatabase.addData(name, dateLong, date);
+    public boolean AddData(Birthday person){
+        return myDatabase.addData(person);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -129,9 +123,10 @@ public class MainActivity extends AppCompatActivity {
         dateBtn = (Button) findViewById(R.id.dateBtn);
 
         myDatabase = new mySQLiteDBHandler(this);
-        final Bundle b = new Bundle();
+        final Bundle a = new Bundle();
 
-        if(myDatabase.getDatabaseCount() != 0) {
+        //If database is not empty, get every birthday long and display to calendarView
+        if(myDatabase.getDatabaseSize() != 0) {
             myDatabase.getLongData(events);
             calendarView.setEvents(events);
         }
@@ -141,17 +136,18 @@ public class MainActivity extends AppCompatActivity {
 
         // This is for when the app first installs and there is no mode saved
         if(sharedPreferences.getString("mode", "").equals("")) {
+            // Default mode is mean
             sharedPreferences.edit().putString("mode", "Mean").apply();
         }
 
         // This is for when the app first installs and there is no request code for notifications
+        // Request code is used to generate a new notification after every birthday added
         if(sharedPreferences.getInt("notifCode", 0) == 0){
             sharedPreferences.edit().putInt("notifCode", 1).apply();
         }
-        mode = sharedPreferences.getString("mode", "");
 
         // Sets the greeting name to whatever mode is set(mean or nice)
-
+        mode = sharedPreferences.getString("mode", "");
         greetingStr = "Greetings, " + generateName(mode) +". \nWho did you forget today?";
         greetingView.setText(greetingStr);
 
@@ -163,119 +159,99 @@ public class MainActivity extends AppCompatActivity {
         final Calendar cal = Calendar.getInstance(Locale.getDefault());
 
         // When button is pressed, brings up the DatePickerDialog
-        dateBtn.setOnClickListener(new View.OnClickListener() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void onClick(View v) {
+        dateBtn.setOnClickListener(v -> {
 
-                int year = cal.get(Calendar.YEAR);
-                int month = cal.get(Calendar.MONTH);
-                int day = cal.get(Calendar.DAY_OF_MONTH);
+            int year = cal.get(Calendar.YEAR);
+            int month = cal.get(Calendar.MONTH);
+            int day = cal.get(Calendar.DAY_OF_MONTH);
 
-                DatePickerDialog dialog = new DatePickerDialog(MainActivity.this,
-                        android.R.style.Theme_Holo_Light_Dialog, mDateSetListener, year, month, day);
-                Objects.requireNonNull(dialog.getWindow()).setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-                dialog.show();
-            }
+            DatePickerDialog dialog = new DatePickerDialog(MainActivity.this,
+                    android.R.style.Theme_Holo_Light_Dialog, mDateSetListener, year, month, day);
+            Objects.requireNonNull(dialog.getWindow()).setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.show();
         });
 
         // Adjusts the calendar based on the dialog box, also assigns TextView above the calendar
-        mDateSetListener = new DatePickerDialog.OnDateSetListener() {
-            @Override
-            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+        mDateSetListener = (view, year, month, dayOfMonth) -> {
+            //Clear bundle before setting it
+            a.clear();
+
+            // Sets Calendar to dialog input
+            cal.set(year, month, dayOfMonth);
+
+            // Sets text below calendar to selected date
+            String textViewStr = Formatter.formatLongDate(cal.getTimeInMillis(), "MM/dd/yyyy");
+            textView.setText(textViewStr);
+
+            // Makes the addBtn appear
+            addBtn.animate().alphaBy(1).setDuration(1000);
+            addBtn.isClickable();
+
+            // Sets CalendarView to date chosen by user
+            try {
+                calendarView.setDate(cal);
+                Log.i("Date changed", Long.toString(cal.getTimeInMillis()));
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
+            // Bundles date to send to AddActivity window
+            a.putLong("dateLong", cal.getTimeInMillis());
+            a.putString("formDate", textView.getText().toString());
+
+        };
+        // Controls changing the date through the CalendarView
+            calendarView.setOnDayClickListener(eventDay -> {
                 //Clear bundle before setting it
-                clearBundle(b);
+                a.clear();
+                // Assigns EventDay to a Calendar
+                Calendar clickedDay = eventDay.getCalendar();
 
-                // Sets Calendar to dialog input
-                cal.set(year, month, dayOfMonth);
+                // If a birthday exists for selected day, starts the DayActivity
+                for (int i = 0; i < events.size(); i++){
+                    if (events.get(i).getCalendar() == clickedDay){
+                        Intent k = new Intent(MainActivity.this, DayActivity.class);
+                        a.putLong("date", clickedDay.getTimeInMillis());
+                        k.putExtra("selectedDate", a);
+                        startActivityForResult(k, 3);
+                    }
+                }
 
-                // Sets text below calendar to selected date
-                String textViewStr = Formatter.formatLongDate(cal.getTimeInMillis(), "MM/dd/yyyy");
-                textView.setText(textViewStr);
+                // Assigns TextView above the calendar
+                textView.setText(formatLongDate(clickedDay.getTimeInMillis(), "MM/dd/yyyy"));
 
-                // Makes the addBtn appear
+                // AddBtn appears after initially changing the date
                 addBtn.animate().alphaBy(1).setDuration(1000);
                 addBtn.isClickable();
 
-                // Sets CalendarView to date chosen by user
-                try {
-                    calendarView.setDate(cal);
-                    Log.i("Date changed", Long.toString(cal.getTimeInMillis()));
-                } catch (Exception e){
-                    e.printStackTrace();
-                }
-
-                // Bundles date to send to AddActivity window
-                b.putLong("dateLong", cal.getTimeInMillis());
-                b.putString("formDate", textView.getText().toString());
-
-            }
-        };
-        // Controls changing the date through the CalendarView
-            calendarView.setOnDayClickListener(new OnDayClickListener() {
-                @Override
-                public void onDayClick(EventDay eventDay) {
-
-                    clearBundle(b);
-
-                    // Assigns EventDay to a Calendar
-                    Calendar clickedDay = eventDay.getCalendar();
-
-                    // If a birthday exists for selected day, starts the DayActivity
-                    for (int i = 0; i < events.size(); i++){
-                        if (events.get(i).getCalendar() == clickedDay){
-                            Intent k = new Intent(MainActivity.this, DayActivity.class);
-                            b.putLong("date", clickedDay.getTimeInMillis());
-                            k.putExtra("selectedDate", b);
-                            startActivityForResult(k, 3);
-                        }
-                    }
-
-                    // Assigns TextView above the calendar
-                    textView.setText(formatLongDate(clickedDay.getTimeInMillis(), "MM/dd/yyyy"));
-
-                    // AddBtn appears after initially changing the date
-                    addBtn.animate().alphaBy(1).setDuration(1000);
-                    addBtn.isClickable();
-
-                    // Bundles date to send to AddActivity
-                    b.putLong("dateLong", clickedDay.getTimeInMillis());
-                    b.putString("formDate", textView.getText().toString());
-                }
+                // Bundles date to send to AddActivity
+                a.putLong("dateLong", clickedDay.getTimeInMillis());
+                a.putString("dashedDate", textView.getText().toString());
             });
 
 
         // When pressed, brings up AddActivity
-        addBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i = new Intent(getApplicationContext(), AddActivity.class);
-                i.putExtra("dateInfo", b);
+        addBtn.setOnClickListener(v -> {
+            Intent i = new Intent(getApplicationContext(), AddActivity.class);
+            i.putExtra("dateInfo", a);
 
-                startActivityForResult(i, 1);
-            }
+            startActivityForResult(i, 1);
         });
 
         // When pressed, brings up ViewActivity
-        viewBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent j = new Intent(MainActivity.this, ViewActivity.class);
-                b.putLong("dateLong", calendarView.getCurrentPageDate().getTimeInMillis());
-                b.putInt("calYear", cal.get(Calendar.YEAR));
-                j.putExtra("firstDate", b );
+        viewBtn.setOnClickListener(v -> {
+            Intent j = new Intent(MainActivity.this, ViewActivity.class);
+            a.putLong("dateLong", calendarView.getCurrentPageDate().getTimeInMillis());
+            a.putInt("calYear", cal.get(Calendar.YEAR));
+            j.putExtra("firstDate", a);
 
-                startActivityForResult(j, 2);
-            }
+            startActivityForResult(j, 2);
         });
 
         // When pressed, brings up SettingsActivity
-        settingsBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent k = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivityForResult(k, 4);
-            }
+        settingsBtn.setOnClickListener(v -> {
+            Intent k = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivityForResult(k, 4);
         });
 
     }
@@ -294,23 +270,19 @@ public class MainActivity extends AppCompatActivity {
         //Removes deleted birthdays from CalendarView
         if(requestCode == 2 && resultCode == RESULT_OK){
             events.clear();
-
             // If-statement so app does not crash when database is empty
-            if(myDatabase.getDatabaseCount() != 0) {
+            if(myDatabase.getDatabaseSize() != 0) {
                 myDatabase.getLongData(events);
             }
-
             calendarView.setEvents(events);
         }
         // Same thing
         if(requestCode == 3 && resultCode == RESULT_OK){
             events.clear();
-
             // If-statement so app does not crash when database is empty
-            if(myDatabase.getDatabaseCount() != 0) {
+            if(myDatabase.getDatabaseSize() != 0) {
                 myDatabase.getLongData(events);
             }
-
             calendarView.setEvents(events);
         }
         // Resets the mode based on user selection

@@ -50,20 +50,20 @@ public class mySQLiteDBHandler extends SQLiteOpenHelper {
 
     /* POSSIBLY SEVERELY OVER-ENGINEERED CODE BELOW */
 
-    public boolean addData(String name, long longDate, String formDate) {
+    public boolean addData(Birthday person) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
-        contentValues.put(COL1, name);
-        contentValues.put(COL2, longDate);
-        contentValues.put(COL3, formDate);
+        contentValues.put(COL1, person.getName());
+        contentValues.put(COL2, person.getLongDate());
+        contentValues.put(COL3, person.getDbDate());
 
-        Log.d(TAG, "Adding: " + name + ", " + Long.toString(longDate) + ", " + formDate);
+        Log.d(TAG, "Adding: " + person.getName() + ", " + person.getLongDate() + ", " + person.getDbDate());
         long result = db.insert(TABLE_NAME, null, contentValues);
 
         return result != -1;
     }
 
-    public int getDatabaseCount(){
+    public int getDatabaseSize(){
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + TABLE_NAME;
         Cursor data = db.rawQuery(query, null);
@@ -129,7 +129,7 @@ public class mySQLiteDBHandler extends SQLiteOpenHelper {
     }
 
     public ArrayList<String> getNameList(long date){
-        ArrayList<String> names = new ArrayList<String>();
+        ArrayList<String> names = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY " + COL2 + " ASC";
         Cursor data = db.rawQuery(query, null);

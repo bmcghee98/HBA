@@ -27,13 +27,9 @@ import java.util.Random;
 
 public class AddActivity extends MainActivity {
 
-    Button saveBtn;
-    EditText nameEditText;
-    TextView noteView;
-    TextView dateView;
-
-    mySQLiteDBHandler myDBH;
-    ArrayList<String> people = new ArrayList<String>();
+    private EditText nameEditText;
+    private ArrayList<String> people = new ArrayList<>();
+    private Birthday person;
     
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -41,30 +37,32 @@ public class AddActivity extends MainActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add);
 
+        TextView dateView = (TextView) findViewById(R.id.dateView);
+        Button saveBtn = (Button) findViewById(R.id.saveBtn);
         nameEditText = (EditText) findViewById(R.id.nameEditText);
-        noteView = (TextView) findViewById(R.id.noteView);
-        dateView = (TextView) findViewById(R.id.dateView);
-        saveBtn = (Button) findViewById(R.id.saveBtn);
+        //noteView = (TextView) findViewById(R.id.noteView);
+        //private TextView noteView;
 
-        myDBH = new mySQLiteDBHandler(this);
+        mySQLiteDBHandler myDBH = new mySQLiteDBHandler(this);
 
         Intent i = getIntent();
         final Bundle b = i.getBundleExtra("dateInfo");
         assert b != null;
         long transferredLong = b.getLong("dateLong");
-        String formDate = b.getString("formDate");
+        String formDate = b.getString("dashedDate");
 
+
+        //Adjusts the transferredLong so that each entry is at midnight
         Calendar cal2 = Calendar.getInstance(Locale.getDefault());
-
         cal2.setTimeInMillis(transferredLong);
         cal2.set(Calendar.HOUR_OF_DAY, 0);
         cal2.set(Calendar.MINUTE, 0);
         cal2.set(Calendar.SECOND, 0);
 
 
-
         // List to check for names that have already been entered
-        if (myDBH.getDatabaseCount() != 0) {
+        if (myDBH.getDatabaseSize() != 0) {
+            //If the database is not empty, pull every birthday on this date
             people = myDBH.getNameList(transferredLong);
         }
 
@@ -87,65 +85,66 @@ public class AddActivity extends MainActivity {
 
 
         // When pressed, closes the window, saves data, and resets information
-        saveBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String nameToEnter = nameEditText.getText().toString();
+        saveBtn.setOnClickListener(v -> {
+            String nameToEnter = nameEditText.getText().toString();
 
-                boolean entered = false;
+            boolean entered = false;
 
-                // If EditText is empty, don't enter the name
-                if (nameToEnter.equals("")) {
-                    Toast.makeText(AddActivity.this, "Hey, " + generateName(MainActivity.mode) +
-                            "! You didn't enter a name!", Toast.LENGTH_SHORT).show();
-                } else {
-                    for (int i = 0; i < people.size(); i++) {
-                        // If name already exists, don't enter
-                        if (nameToEnter.equals(people.get(i))) {
-                            Toast.makeText(AddActivity.this, "This name already exists for this date...", Toast.LENGTH_SHORT).show();
-                            entered = true;
-                        }
+            // If EditText is empty, don't enter the name
+            if (nameToEnter.equals("")) {
+                Toast.makeText(AddActivity.this, "Hey, " + generateName(MainActivity.mode) +
+                        "! You didn't enter a name!", Toast.LENGTH_SHORT).show();
+            } else {
+                for (int i1 = 0; i1 < people.size(); i1++) {
+                    // Loop to see if name exists in the "person" arraylist. If name already exists, don't enter
+                    if (nameToEnter.equals(people.get(i1))) {
+                        Toast.makeText(AddActivity.this, "This name already exists for this date...", Toast.LENGTH_SHORT).show();
+                        entered = true;
+                    }
+                }
+
+                // If birthday has not already been entered, add
+                if (!entered) {
+                    // Adds info into database
+                    person = new Birthday(nameToEnter, cal2.getTimeInMillis(), formDate);
+                    boolean successful = AddData(person);
+                    cal2.clear();
+
+                    // If successful, sends result back to main
+                    if (successful) {
+                        Toast.makeText(AddActivity.this, "Birthday saved!", Toast.LENGTH_SHORT).show();
+
+                        Intent intent = new Intent(AddActivity.this, ReminderBroadcast.class);
+                        intent.putExtra("name", person.getName());
+
+                        // Generate a new notification for every entry
+                        int requestCode = sharedPreferences.getInt("notifCode", 1);
+
+                        Log.i("Initial request", Integer.toString(requestCode));
+                        requestCode = ++requestCode;
+
+                        PendingIntent pendingIntent = PendingIntent.getBroadcast(AddActivity.this, requestCode , intent, 0);
+
+                        // Saves the generated requestCode to be incremented later for every notification
+                        sharedPreferences.edit().putInt("notifCode", requestCode).apply();
+                        Log.i("Final request", Integer.toString(sharedPreferences.getInt("notifCode", 0)));
+
+                        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                        assert alarmManager != null;
+
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, person.getLongDate(), pendingIntent);
+
+                        Log.i("Alarm scheduled for", Formatter.formatLongDate(person.getLongDate(), "yyyyy.MMMMM.dd GGG hh:mm aaa"));
+                        setResult(RESULT_OK);
+                    } else {
+                        Toast.makeText(AddActivity.this, "Error: Something went wrong", Toast.LENGTH_SHORT).show();
                     }
 
-                    // If birthday has not already been entered, add
-                    if (!entered) {
-                        // Adds info into database
-                        boolean successful = AddData(nameToEnter, cal2.getTimeInMillis(), formDate);
-
-                        // If successful, sends result back to main
-                        if (successful) {
-                            Toast.makeText(AddActivity.this, "Birthday saved!", Toast.LENGTH_SHORT).show();
-
-                            Intent intent = new Intent(AddActivity.this, ReminderBroadcast.class);
-                            intent.putExtra("name", nameToEnter);
-
-
-                            // Generate a new notification for every entry
-                            int requestCode = sharedPreferences.getInt("notifCode", 1);
-
-                            Log.i("Initial request", Integer.toString(requestCode));
-                            requestCode = ++requestCode;
-
-                            PendingIntent pendingIntent = PendingIntent.getBroadcast(AddActivity.this, requestCode , intent, 0);
-
-                            // Saves the generated requestCode to be incremented for every notification
-                            sharedPreferences.edit().putInt("notifCode", requestCode).apply();
-                            Log.i("Final request", Integer.toString(sharedPreferences.getInt("notifCode", 0)));
-
-                            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-                            assert alarmManager != null;
-                            
-                            alarmManager.set(AlarmManager.RTC_WAKEUP, cal2.getTimeInMillis(), pendingIntent);
-
-                            Log.i("Alarm scheduled for", Formatter.formatLongDate(cal2.getTimeInMillis(), "yyyyy.MMMMM.dd GGG hh:mm aaa"));
-                            setResult(RESULT_OK);
-                        } else {
-                            Toast.makeText(AddActivity.this, "Error: Something went wrong", Toast.LENGTH_SHORT).show();
-                        }
-
-                        finish();
-                        nameEditText.setText("");
-                    }
+                    finish();
+                    person = null;
+                    people.clear();
+                    b.clear();
+                    nameEditText.setText("");
                 }
             }
         });
