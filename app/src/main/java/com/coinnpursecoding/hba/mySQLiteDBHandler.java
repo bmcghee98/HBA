@@ -98,7 +98,7 @@ public class mySQLiteDBHandler extends SQLiteOpenHelper {
         }
     }
 
-    public void fillBirthdayList(String month, String year){
+    public void fillBirthdayList(String month){
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY " + COL2 + " ASC";
         Cursor data = db.rawQuery(query, null);
@@ -113,8 +113,7 @@ public class mySQLiteDBHandler extends SQLiteOpenHelper {
                 String comparedDate = data.getString(data.getColumnIndex(COL3));
 
                 // If month and year are the same, add to array
-                if(Formatter.getDateValue(comparedDate, 0).equals(month) &&
-                        Formatter.getDateValue(comparedDate, 2).equals(year)) {
+                if(Formatter.getDateValue(comparedDate, 0).equals(month)) {
 
                     // Formats for the View activity ex. Bob (Oct 20th)
                     String date = Formatter.formatLongDate(data.getLong(data.getColumnIndex(COL2)), "MMM d");
@@ -168,5 +167,9 @@ public class mySQLiteDBHandler extends SQLiteOpenHelper {
 
         data.close();
         return success;
+    }
+
+    public void updateBirthdays(String year){
+
     }
 }

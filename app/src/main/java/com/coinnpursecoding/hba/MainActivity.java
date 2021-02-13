@@ -126,6 +126,18 @@ public class MainActivity extends AppCompatActivity {
         myDatabase = new mySQLiteDBHandler(this);
         final Bundle a = new Bundle();
 
+
+        //Set max and min dates
+        Calendar min = Calendar.getInstance(Locale.getDefault());
+        int thisYear = min.get(Calendar.YEAR);
+        Log.i("year", Long.toString(thisYear));
+        min.set(thisYear, 0, 0);
+        Calendar max = Calendar.getInstance(Locale.getDefault());
+        max.set(thisYear, 11,31);
+
+        calendarView.setMinimumDate(min);
+        calendarView.setMaximumDate(max);
+
         //If database is not empty, get every birthday long and display to calendarView
         if(myDatabase.getDatabaseSize() != 0) {
             myDatabase.getLongData(events);
@@ -168,6 +180,8 @@ public class MainActivity extends AppCompatActivity {
 
             DatePickerDialog dialog = new DatePickerDialog(MainActivity.this,
                     android.R.style.Theme_Holo_Light_Dialog, mDateSetListener, year, month, day);
+            dialog.getDatePicker().setMinDate(min.getTimeInMillis());
+            dialog.getDatePicker().setMaxDate(max.getTimeInMillis());
             Objects.requireNonNull(dialog.getWindow()).setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             dialog.show();
         });

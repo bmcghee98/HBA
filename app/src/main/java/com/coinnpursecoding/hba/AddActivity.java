@@ -22,6 +22,7 @@ import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SwitchCompat;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -89,23 +90,15 @@ public class AddActivity extends MainActivity {
         getWindow().setAttributes(params);
 
         yearly = false;
-        yearlySwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(isChecked) {
-                    yearly = true;
-                    AlertDialog builder = new AlertDialog.Builder(AddActivity.this)
-                            .setIcon(R.drawable.cake_icon2)
-                            .setTitle("About that...")
-                            .setMessage("For storage purposes, we'll remind you for the next 10 years!")
-                            .setPositiveButton("SWEET", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            })
-                            .show();
-                }
+        yearlySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if(isChecked) {
+                yearly = true;
+                AlertDialog builder = new AlertDialog.Builder(AddActivity.this)
+                        .setIcon(R.drawable.cake_icon2)
+                        .setTitle("About that...")
+                        .setMessage("For storage purposes, we'll remind you for the next 10 years!")
+                        .setPositiveButton("SWEET", (dialog, which) -> dialog.dismiss())
+                        .show();
             }
         });
 
@@ -136,27 +129,15 @@ public class AddActivity extends MainActivity {
                     if(!yearly) {
                         // Adds info into database
                         successful = AddData(person);
-                    } else {
-                        // If yearly is true, keep adding till it fails or reaches 20 entries
-                        AddData(person);
-                        int j = 0;
-                        do {
-                            cal2.add(Calendar.YEAR, 1);
-                            person = new Birthday(nameToEnter, cal2.getTimeInMillis(), Formatter.formatLongDate(cal2.getTimeInMillis(), "MM/dd/yyyy"));
-                            AddData(person);
-                            j++;
-                        } while (AddData(person) && j != 9);
-                        // If it reaches 10 entries TOTAL, addition is successful
-                        if(j == 9){
-                            successful = true;
-                        }
                     }
                     cal2.clear();
+
 
                     // If successful, sends result back to main
                     if (successful) {
                         Toast.makeText(AddActivity.this, "Birthday saved!", Toast.LENGTH_SHORT).show();
 
+                        /*
                         Intent intent = new Intent(AddActivity.this, ReminderBroadcast.class);
                         intent.putExtra("name", person.getName());
 
@@ -178,6 +159,8 @@ public class AddActivity extends MainActivity {
                         alarmManager.set(AlarmManager.RTC_WAKEUP, person.getLongDate(), pendingIntent);
 
                         Log.i("Alarm scheduled for", Formatter.formatLongDate(person.getLongDate(), "yyyyy.MMMMM.dd GGG hh:mm aaa"));
+
+                         */
                         setResult(RESULT_OK);
                     } else {
                         Toast.makeText(AddActivity.this, "Error: Something went wrong", Toast.LENGTH_SHORT).show();
