@@ -4,7 +4,9 @@
     <string name="reminderNoteMessage">Note: We are not responsible for any hurt feelings or emotional distress.</string>
     <string name="exitHelpMessage">Tap outside the window to exit.</string>
     <string name="selectBtnText">select date</string>
-    <string name="noBirthdaysText">No birthdays are saved...</string>
+    <string name="noBirthdaysText">No birthdays are saved…</string>
     <string name="settings">Settings</string>
     <string name="change_mode">CHANGE MODE</string>
+    <string name="set">SET</string>
+    <string name="do_you_want_to_be_reminded_yearly">Do you want to be reminded yearly?</string>
 </resources>
