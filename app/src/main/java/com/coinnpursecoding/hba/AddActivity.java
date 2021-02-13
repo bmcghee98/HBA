@@ -3,6 +3,7 @@ package com.coinnpursecoding.hba;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 
 import android.os.Build;
@@ -13,11 +14,14 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -30,7 +34,8 @@ public class AddActivity extends MainActivity {
     private EditText nameEditText;
     private ArrayList<String> people = new ArrayList<>();
     private Birthday person;
-    
+    private boolean yearly;
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +45,8 @@ public class AddActivity extends MainActivity {
         TextView dateView = (TextView) findViewById(R.id.dateView);
         Button saveBtn = (Button) findViewById(R.id.saveBtn);
         nameEditText = (EditText) findViewById(R.id.nameEditText);
-        //noteView = (TextView) findViewById(R.id.noteView);
-        //private TextView noteView;
+        Switch yearlySwitch = (Switch) findViewById(R.id.yearlySwitch);
+
 
         mySQLiteDBHandler myDBH = new mySQLiteDBHandler(this);
 
@@ -49,7 +54,7 @@ public class AddActivity extends MainActivity {
         final Bundle b = i.getBundleExtra("dateInfo");
         assert b != null;
         long transferredLong = b.getLong("dateLong");
-        String formDate = b.getString("dashedDate");
+        String formDate = b.getString("slashedDate");
 
 
         //Adjusts the transferredLong so that each entry is at midnight
@@ -83,6 +88,26 @@ public class AddActivity extends MainActivity {
         params.gravity = Gravity.CENTER;
         getWindow().setAttributes(params);
 
+        yearly = false;
+        yearlySwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked) {
+                    yearly = true;
+                    AlertDialog builder = new AlertDialog.Builder(AddActivity.this)
+                            .setIcon(R.drawable.cake_icon2)
+                            .setTitle("About that...")
+                            .setMessage("For storage purposes, we'll remind you for the next 10 years!")
+                            .setPositiveButton("SWEET", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            })
+                            .show();
+                }
+            }
+        });
 
         // When pressed, closes the window, saves data, and resets information
         saveBtn.setOnClickListener(v -> {
@@ -105,9 +130,27 @@ public class AddActivity extends MainActivity {
 
                 // If birthday has not already been entered, add
                 if (!entered) {
-                    // Adds info into database
+                    boolean successful = false;
                     person = new Birthday(nameToEnter, cal2.getTimeInMillis(), formDate);
-                    boolean successful = AddData(person);
+                    // If yearly is false, only add for one year
+                    if(!yearly) {
+                        // Adds info into database
+                        successful = AddData(person);
+                    } else {
+                        // If yearly is true, keep adding till it fails or reaches 20 entries
+                        AddData(person);
+                        int j = 0;
+                        do {
+                            cal2.add(Calendar.YEAR, 1);
+                            person = new Birthday(nameToEnter, cal2.getTimeInMillis(), Formatter.formatLongDate(cal2.getTimeInMillis(), "MM/dd/yyyy"));
+                            AddData(person);
+                            j++;
+                        } while (AddData(person) && j != 9);
+                        // If it reaches 10 entries TOTAL, addition is successful
+                        if(j == 9){
+                            successful = true;
+                        }
+                    }
                     cal2.clear();
 
                     // If successful, sends result back to main

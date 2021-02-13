@@ -2,8 +2,8 @@ package com.coinnpursecoding.hba;
 
 public class Birthday {
     private String personName;
-    private long longDate;
-    private String dbDate;
+    public long longDate;
+    public String dbDate;
 
     Birthday(String name, long date, String formDate){
         personName = name;

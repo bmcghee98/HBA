@@ -78,7 +78,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/switch1"
+        app:layout_constraintTop_toBottomOf="@+id/yearlySwitch"
         app:layout_constraintVertical_bias="0.107" />
 
     <TextView
@@ -114,7 +114,7 @@
         app:layout_constraintVertical_bias="0.061" />
 
     <Switch
-        android:id="@+id/switch1"
+        android:id="@+id/yearlySwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/connection__ii"
@@ -125,11 +125,11 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView2"
+        app:layout_constraintTop_toBottomOf="@+id/yearlyText"
         app:layout_constraintVertical_bias="0.09" />
 
     <TextView
-        android:id="@+id/textView2"
+        android:id="@+id/yearlyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/connection__ii"

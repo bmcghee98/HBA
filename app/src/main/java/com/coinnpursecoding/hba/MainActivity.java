@@ -104,8 +104,9 @@ public class MainActivity extends AppCompatActivity {
 
     // Adds dateLong to SQLite Database
     public boolean AddData(Birthday person){
-        return myDatabase.addData(person);
+            return myDatabase.addData(person);
     }
+
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -197,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
 
             // Bundles date to send to AddActivity window
             a.putLong("dateLong", cal.getTimeInMillis());
-            a.putString("formDate", textView.getText().toString());
+            a.putString("slashedDate", textView.getText().toString());
 
         };
         // Controls changing the date through the CalendarView
@@ -226,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Bundles date to send to AddActivity
                 a.putLong("dateLong", clickedDay.getTimeInMillis());
-                a.putString("dashedDate", textView.getText().toString());
+                a.putString("slashedDate", textView.getText().toString());
             });
 
 
